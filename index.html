@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>乐高套装收藏</title>
+</head>
+<body>
+  <!-- HTML 结构 -->
+  <main class="app">
+    <header class="page-header">
+      <p class="eyebrow">我的收藏</p>
+      <h1>乐高套装收藏</h1>
+      <p class="intro">记录每一盒套装，随时查看收藏与拼搭进度。</p>
+    </header>
+
+    <div class="content-grid">
+      <section class="panel form-panel" aria-labelledby="form-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">添加记录</p>
+            <h2 id="form-title">新增套装</h2>
+          </div>
+        </div>
+
+        <form id="set-form" novalidate>
+          <div class="field">
+            <label for="name">名称 <span aria-hidden="true">*</span></label>
+            <input id="name" name="name" type="text" autocomplete="off"
+              aria-describedby="name-error">
+            <p class="field-error" id="name-error" aria-live="polite"></p>
+          </div>
+
+          <div class="field">
+            <label for="number">编号 <span aria-hidden="true">*</span></label>
+            <input id="number" name="number" type="text" autocomplete="off"
+              aria-describedby="number-error">
+            <p class="field-error" id="number-error" aria-live="polite"></p>
+          </div>
+
+          <div class="field">
+            <label for="series">系列 <span aria-hidden="true">*</span></label>
+            <select id="series" name="series" required aria-describedby="series-error">
+              <option value="City">City</option>
+              <option value="Icons">Icons</option>
+              <option value="Star Wars">Star Wars</option>
+              <option value="Technic">Technic</option>
+              <option value="Creator">Creator</option>
+              <option value="Ideas">Ideas</option>
+              <option value="其他">其他</option>
+            </select>
+            <label for="custom-series" id="custom-series-label" hidden>自定义系列名称</label>
+            <input id="custom-series" name="customSeries" type="text" autocomplete="off"
+              placeholder="请输入自定义系列名称" aria-describedby="series-error" hidden>
+            <p class="field-error" id="series-error" aria-live="polite"></p>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="piece-count">零件数 <span aria-hidden="true">*</span></label>
+              <input id="piece-count" name="pieceCount" type="text" inputmode="numeric"
+                autocomplete="off" aria-describedby="piece-count-error">
+              <p class="field-error" id="piece-count-error" aria-live="polite"></p>
+            </div>
+
+            <div class="field">
+              <label for="price">入手价</label>
+              <div class="input-with-prefix">
+                <span aria-hidden="true">¥</span>
+                <input id="price" name="price" type="text" inputmode="decimal"
+                  autocomplete="off" aria-describedby="price-error">
+              </div>
+              <p class="field-error" id="price-error" aria-live="polite"></p>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="status">状态</label>
+            <select id="status" name="status">
+              <option value="未拼装">未拼装</option>
+              <option value="拼装中">拼装中</option>
+              <option value="已完成">已完成</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="notes">备注</label>
+            <textarea id="notes" name="notes" rows="3"
+              aria-describedby="notes-error"></textarea>
+            <p class="field-error" id="notes-error" aria-live="polite"></p>
+          </div>
+
+          <p class="form-message" id="form-message" aria-live="polite"></p>
+          <button class="primary-button" type="submit">保存套装</button>
+        </form>
+      </section>
+
+      <section class="panel collection-panel" aria-labelledby="collection-title">
+        <div class="section-heading collection-heading">
+          <div>
+            <p class="eyebrow">收藏清单</p>
+            <h2 id="collection-title">我的套装</h2>
+          </div>
+          <span class="collection-count" id="collection-count">0 件</span>
+        </div>
+        <div id="collection-list" class="collection-list" aria-live="polite"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- CSS 样式 -->
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      color: #202521;
+      background: #f4f6f3;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --green: #176b4a;
+      --green-dark: #10533a;
+      --muted: #68736c;
+      --line: #e1e7e2;
+      --red: #bd3030;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-width: 320px;
+      margin: 0;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .app {
+      width: min(100% - 2rem, 76rem);
+      margin: 0 auto;
+      padding: 3rem 0 4rem;
+    }
+
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 0.4rem;
+      color: var(--green);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 0.5rem;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      margin-bottom: 0;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .intro {
+      margin-bottom: 0;
+      color: var(--muted);
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(17rem, 0.82fr) minmax(0, 1.4fr);
+      align-items: start;
+      gap: 1.25rem;
+    }
+
+    .panel {
+      min-width: 0;
+      padding: clamp(1.1rem, 3vw, 1.6rem);
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      background: #fff;
+      box-shadow: 0 0.5rem 1.5rem rgb(27 48 35 / 4%);
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .field {
+      min-width: 0;
+      margin-bottom: 1rem;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.9rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-size: 0.875rem;
+      font-weight: 650;
+    }
+
+    label span {
+      color: var(--red);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-height: 2.8rem;
+      padding: 0.65rem 0.75rem;
+      border: 1px solid #cfd8d1;
+      border-radius: 0.55rem;
+      outline: none;
+      background: #fff;
+      color: inherit;
+      transition: border-color 140ms ease, box-shadow 140ms ease;
+    }
+
+    textarea {
+      min-height: 5.5rem;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgb(23 107 74 / 12%);
+    }
+
+    .input-with-prefix {
+      position: relative;
+    }
+
+    .input-with-prefix span {
+      position: absolute;
+      top: 50%;
+      left: 0.75rem;
+      color: var(--muted);
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .input-with-prefix input {
+      padding-left: 1.8rem;
+    }
+
+    [aria-invalid="true"] {
+      border-color: var(--red);
+    }
+
+    .field-error,
+    .form-message {
+      min-height: 1rem;
+      margin: 0.25rem 0 0;
+      font-size: 0.78rem;
+    }
+
+    .field-error {
+      color: var(--red);
+    }
+
+    .form-message {
+      margin: 0 0 0.6rem;
+      color: var(--red);
+    }
+
+    .primary-button,
+    .delete-button {
+      min-height: 2.65rem;
+      border: 0;
+      border-radius: 0.55rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .primary-button {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      background: var(--green);
+      color: #fff;
+      transition: background 140ms ease;
+    }
+
+    .primary-button:hover {
+      background: var(--green-dark);
+    }
+
+    button:focus-visible {
+      outline: 3px solid #8ec8a8;
+      outline-offset: 2px;
+    }
+
+    .collection-count {
+      flex: none;
+      padding: 0.35rem 0.65rem;
+      border-radius: 99rem;
+      background: #edf5ef;
+      color: var(--green-dark);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .collection-list {
+      display: grid;
+      gap: 0.8rem;
+    }
+
+    .empty-state {
+      padding: 2.5rem 1rem;
+      border: 1px dashed #cfd8d1;
+      border-radius: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .empty-state p {
+      margin: 0;
+    }
+
+    .set-card {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 0.75rem;
+      background: #fcfdfc;
+    }
+
+    .set-card-content {
+      min-width: 0;
+    }
+
+    .set-card h3 {
+      margin: 0 0 0.4rem;
+      overflow-wrap: anywhere;
+      font-size: 1rem;
+    }
+
+    .set-meta,
+    .set-notes {
+      margin: 0.25rem 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .set-status {
+      display: inline-block;
+      margin-top: 0.6rem;
+      padding: 0.25rem 0.55rem;
+      border-radius: 99rem;
+      background: #edf5ef;
+      color: var(--green-dark);
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .delete-button {
+      flex: none;
+      min-height: 2.25rem;
+      padding: 0.45rem 0.7rem;
+      border: 1px solid #f0cccc;
+      background: #fff;
+      color: var(--red);
+    }
+
+    .delete-button:hover {
+      background: #fff4f4;
+    }
+
+    @media (max-width: 599px) {
+      .app {
+        width: min(100% - 1.25rem, 36rem);
+        padding-top: 2rem;
+      }
+
+      .content-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 380px) {
+      .field-row {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+      }
+
+      .set-card {
+        flex-direction: column;
+      }
+    }
+  </style>
+
+  <!-- JavaScript 逻辑 -->
+  <script>
+    (() => {
+      "use strict";
+
+      const STORAGE_KEY = "lego-collection-v1";
+      const form = document.getElementById("set-form");
+      const list = document.getElementById("collection-list");
+      const count = document.getElementById("collection-count");
+      const formMessage = document.getElementById("form-message");
+      const fieldNames = ["name", "number", "series", "pieceCount", "price", "notes"];
+      const seriesSelect = form.elements.series;
+      const customSeriesInput = form.elements.customSeries;
+      const customSeriesLabel = document.getElementById("custom-series-label");
+      let sets = loadSets();
+
+      function loadSets() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved === null) {
+            return [];
+          }
+
+          const parsed = JSON.parse(saved);
+          if (!Array.isArray(parsed)) {
+            throw new TypeError("收藏数据不是数组");
+          }
+
+          return parsed.filter((item) => item && typeof item === "object" && !Array.isArray(item));
+        } catch (error) {
+          console.warn("无法读取乐高收藏数据，已使用空列表。", error);
+          return [];
+        }
+      }
+
+      function saveSets(nextSets) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(nextSets));
+          sets = nextSets;
+          renderSets();
+          formMessage.textContent = "";
+          return true;
+        } catch (error) {
+          console.warn("无法保存乐高收藏数据。", error);
+          formMessage.textContent = "保存失败，请检查浏览器的本地存储设置后重试。";
+          return false;
+        }
+      }
+
+      function getValue(name) {
+        return form.elements[name].value.trim();
+      }
+
+      function getSeriesValue() {
+        return seriesSelect.value === "其他" ? customSeriesInput.value.trim() : seriesSelect.value;
+      }
+
+      function updateCustomSeriesField() {
+        const isCustom = seriesSelect.value === "其他";
+        customSeriesInput.hidden = !isCustom;
+        customSeriesLabel.hidden = !isCustom;
+        customSeriesInput.required = isCustom;
+        if (!isCustom) {
+          customSeriesInput.removeAttribute("aria-invalid");
+        }
+      }
+
+      function setError(name, message) {
+        if (name === "series") {
+          const error = document.getElementById("series-error");
+          error.textContent = message;
+          const missingSelection = !seriesSelect.value;
+          const missingCustomName = seriesSelect.value === "其他" && customSeriesInput.value.trim() === "";
+          seriesSelect.toggleAttribute("aria-invalid", Boolean(message) && missingSelection);
+          customSeriesInput.toggleAttribute("aria-invalid", Boolean(message) && missingCustomName);
+          return;
+        }
+
+        const input = form.elements[name];
+        const error = document.getElementById(`${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}-error`);
+        if (!error) {
+          return;
+        }
+
+        error.textContent = message;
+        if (message) {
+          input.setAttribute("aria-invalid", "true");
+        } else {
+          input.removeAttribute("aria-invalid");
+        }
+      }
+
+      function validate() {
+        let valid = true;
+        const requiredFields = [
+          ["name", "请输入套装名称。"],
+          ["number", "请输入套装编号。"]
+        ];
+
+        requiredFields.forEach(([name, message]) => {
+          const missing = getValue(name) === "";
+          setError(name, missing ? message : "");
+          valid = valid && !missing;
+        });
+
+        const missingSeries = !seriesSelect.value || (seriesSelect.value === "其他" && customSeriesInput.value.trim() === "");
+        setError("series", missingSeries ? (seriesSelect.value === "其他" ? "请输入自定义系列名称。" : "请选择套装系列。") : "");
+        valid = valid && !missingSeries;
+
+        const pieceCount = getValue("pieceCount");
+        const validPieceCount = /^[1-9]\d*$/.test(pieceCount);
+        setError("pieceCount", validPieceCount ? "" : "请输入大于或等于 1 的正整数。");
+        valid = valid && validPieceCount;
+
+        const price = getValue("price");
+        const validPrice = price === "" || /^(?:\d+(?:\.\d*)?|\.\d+)$/.test(price);
+        setError("price", validPrice ? "" : "请输入非负数字，最多包含一个小数点。");
+        valid = valid && validPrice;
+
+        setError("notes", "");
+        return valid;
+      }
+
+      function createId() {
+        return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      }
+
+      function appendText(parent, tagName, className, text) {
+        const element = document.createElement(tagName);
+        if (className) {
+          element.className = className;
+        }
+        element.textContent = text;
+        parent.append(element);
+        return element;
+      }
+
+      function renderSets() {
+        list.replaceChildren();
+        count.textContent = `${sets.length} 件`;
+
+        if (sets.length === 0) {
+          const emptyState = document.createElement("div");
+          emptyState.className = "empty-state";
+          appendText(emptyState, "p", "", "还没有收藏套装，添加一条记录开始吧。");
+          list.append(emptyState);
+          return;
+        }
+
+        sets.forEach((set, index) => {
+          const card = document.createElement("article");
+          card.className = "set-card";
+          const content = document.createElement("div");
+          content.className = "set-card-content";
+
+          appendText(content, "h3", "", String(set.name ?? "未命名套装"));
+          appendText(content, "p", "set-meta", `编号 ${String(set.number ?? "—")} · ${String(set.series ?? "—")}`);
+          appendText(content, "p", "set-meta", `${String(set.pieceCount ?? "—")} 个零件 · 入手价 ${set.price === "" || set.price == null ? "未填写" : `¥${String(set.price)}`}`);
+          appendText(content, "span", "set-status", String(set.status ?? "未拼装"));
+          if (set.notes) {
+            appendText(content, "p", "set-notes", `备注：${String(set.notes)}`);
+          }
+
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "delete-button";
+          deleteButton.type = "button";
+          deleteButton.textContent = "删除";
+          deleteButton.setAttribute("aria-label", `删除套装：${String(set.name ?? "未命名套装")}`);
+          deleteButton.addEventListener("click", () => {
+            const nextSets = sets.filter((_, setIndex) => setIndex !== index);
+            saveSets(nextSets);
+          });
+
+          card.append(content, deleteButton);
+          list.append(card);
+        });
+      }
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        formMessage.textContent = "";
+        if (!validate()) {
+          const firstInvalid = form.querySelector('[aria-invalid="true"]');
+          if (firstInvalid) {
+            firstInvalid.focus();
+          }
+          return;
+        }
+
+        const newSet = {
+          id: createId(),
+          name: getValue("name"),
+          number: getValue("number"),
+          series: getSeriesValue(),
+          pieceCount: Number(getValue("pieceCount")),
+          price: getValue("price"),
+          status: form.elements.status.value,
+          notes: getValue("notes")
+        };
+
+        if (saveSets([newSet, ...sets])) {
+          form.reset();
+          updateCustomSeriesField();
+          fieldNames.forEach((name) => setError(name, ""));
+          form.elements.name.focus();
+        }
+      });
+
+      seriesSelect.addEventListener("change", () => {
+        updateCustomSeriesField();
+        setError("series", "");
+      });
+
+      updateCustomSeriesField();
+      renderSets();
+    })();
+  </script>
+</body>
+</html>
