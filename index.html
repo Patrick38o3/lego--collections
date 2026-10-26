@@ -14,6 +14,21 @@
       <p class="intro">记录每一盒套装，随时查看收藏与拼搭进度。</p>
     </header>
 
+    <section class="stats-grid" aria-label="收藏统计">
+      <div class="stat-card">
+        <p class="stat-label">套装总数</p>
+        <p class="stat-value" id="stat-total">0</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">总零件数</p>
+        <p class="stat-value" id="stat-pieces">0</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">总花费</p>
+        <p class="stat-value" id="stat-cost">¥0.00</p>
+      </div>
+    </section>
+
     <div class="content-grid">
       <section class="panel form-panel" aria-labelledby="form-title">
         <div class="section-heading">
@@ -193,6 +208,35 @@
     .intro {
       margin-bottom: 0;
       color: var(--muted);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      padding: 1rem 1.1rem;
+      border: 1px solid var(--line);
+      border-radius: 0.9rem;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+      box-shadow: 0 0.35rem 1rem rgb(23 107 74 / 5%);
+    }
+
+    .stat-label {
+      margin: 0 0 0.5rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .stat-value {
+      margin: 0;
+      font-size: clamp(1.6rem, 2vw, 2.2rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--green-dark);
     }
 
     .content-grid {
@@ -432,6 +476,10 @@
         grid-template-columns: minmax(0, 1fr);
       }
 
+      .stats-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
       .filter-controls {
         grid-template-columns: minmax(0, 1fr);
         gap: 0;
@@ -460,6 +508,9 @@
       const list = document.getElementById("collection-list");
       const count = document.getElementById("collection-count");
       const formMessage = document.getElementById("form-message");
+      const totalStat = document.getElementById("stat-total");
+      const piecesStat = document.getElementById("stat-pieces");
+      const costStat = document.getElementById("stat-cost");
       const searchInput = document.getElementById("collection-search");
       const seriesFilter = document.getElementById("series-filter");
       const fieldNames = ["name", "number", "series", "pieceCount", "price", "notes"];
@@ -589,7 +640,28 @@
         return element;
       }
 
+      function updateStats() {
+        const total = sets.length;
+        const pieces = sets.reduce((sum, set) => {
+          const pieceCount = Number(set.pieceCount);
+          return sum + (Number.isFinite(pieceCount) ? pieceCount : 0);
+        }, 0);
+        const cost = sets.reduce((sum, set) => {
+          const value = String(set.price ?? "").trim();
+          if (value === "") {
+            return sum;
+          }
+          const numeric = Number(value);
+          return sum + (Number.isFinite(numeric) ? numeric : 0);
+        }, 0);
+
+        totalStat.textContent = String(total);
+        piecesStat.textContent = String(pieces);
+        costStat.textContent = `¥${cost.toFixed(2)}`;
+      }
+
       function renderSets() {
+        updateStats();
         list.replaceChildren();
         count.textContent = `${sets.length} 件`;
 
