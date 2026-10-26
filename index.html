@@ -103,6 +103,19 @@
           </div>
           <span class="collection-count" id="collection-count">0 件</span>
         </div>
+        <div class="filter-controls">
+          <div class="field">
+            <label for="collection-search">搜索名称或编号</label>
+            <input id="collection-search" type="search" autocomplete="off"
+              placeholder="输入套装名称或编号">
+          </div>
+          <div class="field">
+            <label for="series-filter">按系列筛选</label>
+            <select id="series-filter">
+              <option value="">全部系列</option>
+            </select>
+          </div>
+        </div>
         <div id="collection-list" class="collection-list" aria-live="polite"></div>
       </section>
     </div>
@@ -332,6 +345,17 @@
       gap: 0.8rem;
     }
 
+    .filter-controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(10rem, 0.8fr);
+      gap: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .filter-controls .field {
+      margin-bottom: 0;
+    }
+
     .empty-state {
       padding: 2.5rem 1rem;
       border: 1px dashed #cfd8d1;
@@ -407,6 +431,11 @@
       .content-grid {
         grid-template-columns: minmax(0, 1fr);
       }
+
+      .filter-controls {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+      }
     }
 
     @media (max-width: 380px) {
@@ -431,6 +460,8 @@
       const list = document.getElementById("collection-list");
       const count = document.getElementById("collection-count");
       const formMessage = document.getElementById("form-message");
+      const searchInput = document.getElementById("collection-search");
+      const seriesFilter = document.getElementById("series-filter");
       const fieldNames = ["name", "number", "series", "pieceCount", "price", "notes"];
       const seriesSelect = form.elements.series;
       const customSeriesInput = form.elements.customSeries;
@@ -562,6 +593,18 @@
         list.replaceChildren();
         count.textContent = `${sets.length} 件`;
 
+        const selectedSeries = seriesFilter.value;
+        const availableSeries = [...new Set(sets
+          .map((set) => String(set.series ?? "").trim())
+          .filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-CN"));
+        seriesFilter.replaceChildren(new Option("全部系列", ""));
+        availableSeries.forEach((series) => {
+          seriesFilter.add(new Option(series, series));
+        });
+        if (availableSeries.includes(selectedSeries)) {
+          seriesFilter.value = selectedSeries;
+        }
+
         if (sets.length === 0) {
           const emptyState = document.createElement("div");
           emptyState.className = "empty-state";
@@ -570,7 +613,25 @@
           return;
         }
 
-        sets.forEach((set, index) => {
+        const query = searchInput.value.trim().toLocaleLowerCase();
+        const matchingSets = sets
+          .map((set, index) => ({ set, index }))
+          .filter(({ set }) => {
+            const matchesSearch = !query || [set.name, set.number]
+              .some((value) => String(value ?? "").toLocaleLowerCase().includes(query));
+            const matchesSeries = !seriesFilter.value || String(set.series ?? "").trim() === seriesFilter.value;
+            return matchesSearch && matchesSeries;
+          });
+
+        if (matchingSets.length === 0) {
+          const emptyState = document.createElement("div");
+          emptyState.className = "empty-state";
+          appendText(emptyState, "p", "", "没有找到符合条件的套装");
+          list.append(emptyState);
+          return;
+        }
+
+        matchingSets.forEach(({ set, index }) => {
           const card = document.createElement("article");
           card.className = "set-card";
           const content = document.createElement("div");
@@ -633,6 +694,9 @@
         updateCustomSeriesField();
         setError("series", "");
       });
+
+      searchInput.addEventListener("input", renderSets);
+      seriesFilter.addEventListener("change", renderSets);
 
       updateCustomSeriesField();
       renderSets();
