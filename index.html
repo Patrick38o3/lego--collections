@@ -14,20 +14,29 @@
       <p class="intro">记录每一盒套装，随时查看收藏与拼搭进度。</p>
     </header>
 
-    <section class="stats-grid" aria-label="收藏统计">
-      <div class="stat-card">
-        <p class="stat-label">套装总数</p>
-        <p class="stat-value" id="stat-total">0</p>
+    <div class="stats-section">
+      <section class="stats-grid" aria-label="收藏统计">
+        <div class="stat-card">
+          <p class="stat-label">套装总数</p>
+          <p class="stat-value" id="stat-total">0</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">总零件数</p>
+          <p class="stat-value" id="stat-pieces">0</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">总花费</p>
+          <p class="stat-value" id="stat-cost">¥0.00</p>
+        </div>
+      </section>
+      <div class="backup-actions">
+        <button class="backup-button" id="export-json" type="button">导出 JSON</button>
+        <button class="backup-button" id="export-csv" type="button">导出 CSV</button>
+        <button class="backup-button" id="import-data" type="button">导入 JSON</button>
+        <input id="import-file" type="file" accept=".json,application/json" hidden>
       </div>
-      <div class="stat-card">
-        <p class="stat-label">总零件数</p>
-        <p class="stat-value" id="stat-pieces">0</p>
-      </div>
-      <div class="stat-card">
-        <p class="stat-label">总花费</p>
-        <p class="stat-value" id="stat-cost">¥0.00</p>
-      </div>
-    </section>
+    </div>
+    <p class="backup-message" id="backup-message" aria-live="polite"></p>
 
     <div class="content-grid">
       <section class="panel form-panel" aria-labelledby="form-title">
@@ -213,8 +222,49 @@
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
+      flex: 1;
       gap: 1rem;
-      margin-bottom: 1.5rem;
+    }
+
+    .stats-section {
+      display: flex;
+      align-items: stretch;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .backup-actions {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.6rem;
+    }
+
+    .backup-button {
+      min-height: 2.7rem;
+      padding: 0.6rem 1rem;
+      border: 1px solid #b8d2c1;
+      border-radius: 0.55rem;
+      background: #fff;
+      color: var(--green-dark);
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .backup-button:hover {
+      background: #edf5ef;
+    }
+
+    .backup-message {
+      min-height: 1rem;
+      margin: 0 0 1rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .backup-message.error {
+      color: var(--red);
     }
 
     .stat-card {
@@ -480,6 +530,18 @@
         grid-template-columns: minmax(0, 1fr);
       }
 
+      .stats-section {
+        flex-direction: column;
+      }
+
+      .backup-actions {
+        flex-direction: row;
+      }
+
+      .backup-button {
+        flex: 1;
+      }
+
       .filter-controls {
         grid-template-columns: minmax(0, 1fr);
         gap: 0;
@@ -511,6 +573,8 @@
       const totalStat = document.getElementById("stat-total");
       const piecesStat = document.getElementById("stat-pieces");
       const costStat = document.getElementById("stat-cost");
+      const backupMessage = document.getElementById("backup-message");
+      const importFile = document.getElementById("import-file");
       const searchInput = document.getElementById("collection-search");
       const seriesFilter = document.getElementById("series-filter");
       const fieldNames = ["name", "number", "series", "pieceCount", "price", "notes"];
@@ -628,6 +692,93 @@
 
       function createId() {
         return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      }
+
+      function showBackupMessage(message, isError = false) {
+        backupMessage.textContent = message;
+        backupMessage.classList.toggle("error", isError);
+      }
+
+      function exportData() {
+        const headers = ["名称", "编号", "系列", "零件数", "入手价", "状态", "备注"];
+        const rows = sets.map((set) => [
+          set.name,
+          set.number,
+          set.series,
+          set.pieceCount,
+          set.price,
+          set.status,
+          set.notes
+        ]);
+        const escapeCsvValue = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+        const csv = [headers, ...rows]
+          .map((row) => row.map(escapeCsvValue).join(","))
+          .join("\r\n");
+        const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "lego-collection.csv";
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showBackupMessage("CSV 数据已导出。");
+      }
+
+      function exportJson() {
+        const blob = new Blob([JSON.stringify(sets, null, 2)], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "lego-backup.json";
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showBackupMessage("JSON 数据已导出。");
+      }
+
+      function validateImportedSet(item, index) {
+        if (!item || typeof item !== "object" || Array.isArray(item)
+          || typeof item.name !== "string" || !item.name.trim()
+          || typeof item.number !== "string" || !item.number.trim()
+          || typeof item.series !== "string" || !item.series.trim()
+          || !Number.isInteger(Number(item.pieceCount)) || Number(item.pieceCount) < 1) {
+          throw new TypeError(`第 ${index + 1} 条记录缺少有效的名称、编号、系列或零件数。`);
+        }
+
+        const price = item.price ?? "";
+        if (price !== "" && (!Number.isFinite(Number(price)) || Number(price) < 0)) {
+          throw new TypeError(`第 ${index + 1} 条记录的入手价格式无效。`);
+        }
+
+        return {
+          ...item,
+          id: item.id ?? createId(),
+          pieceCount: Number(item.pieceCount),
+          price: String(price),
+          status: typeof item.status === "string" ? item.status : "未拼装",
+          notes: typeof item.notes === "string" ? item.notes : ""
+        };
+      }
+
+      async function importData(file) {
+        try {
+          const parsed = JSON.parse(await file.text());
+          if (!Array.isArray(parsed)) {
+            throw new TypeError("文件内容应为套装记录数组。");
+          }
+          const importedSets = parsed.map(validateImportedSet);
+          if (importedSets.length === 0) {
+            throw new TypeError("文件中没有可导入的套装记录。");
+          }
+          if (saveSets([...sets, ...importedSets])) {
+            showBackupMessage(`成功导入 ${importedSets.length} 件套装。`);
+          } else {
+            showBackupMessage("保存导入数据失败，请检查浏览器的本地存储设置。", true);
+          }
+        } catch (error) {
+          showBackupMessage(`导入失败：${error instanceof SyntaxError ? "文件不是有效的 JSON。" : error.message}`, true);
+        } finally {
+          importFile.value = "";
+        }
       }
 
       function appendText(parent, tagName, className, text) {
@@ -769,6 +920,14 @@
 
       searchInput.addEventListener("input", renderSets);
       seriesFilter.addEventListener("change", renderSets);
+      document.getElementById("export-json").addEventListener("click", exportJson);
+      document.getElementById("export-csv").addEventListener("click", exportData);
+      document.getElementById("import-data").addEventListener("click", () => importFile.click());
+      importFile.addEventListener("change", () => {
+        if (importFile.files[0]) {
+          importData(importFile.files[0]);
+        }
+      });
 
       updateCustomSeriesField();
       renderSets();
