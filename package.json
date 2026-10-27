@@ -1,0 +1,10 @@
+{
+  "name": "lego-collections",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Automation for the LEGO collections project",
+  "main": "app.js",
+  "dependencies": {
+    "nodemailer": "^6.10.1"
+  }
+}
