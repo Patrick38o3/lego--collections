@@ -9,7 +9,9 @@ async function sendEmail() {
   }
 
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.qq.com",
+    port: 465,
+    secure: true,
     auth: {
       user: username,
       pass: password,
